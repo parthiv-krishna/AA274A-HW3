@@ -5,6 +5,28 @@ import cv2
 import matplotlib.pyplot as plt
 
 
+# From problem 4
+def template_match_helper(template, image, threshold=0.999):
+    """
+    Input
+        template: A (k, ell, c)-shaped ndarray containing the k x ell template (with c channels).
+        image: An (m, n, c)-shaped ndarray containing the m x n image (with c channels).
+        threshold: Minimum normalized cross-correlation value to be considered a match.
+
+    Returns
+        matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
+    """
+    ########## Code starts here ##########
+    h, w = template.shape[0:2] # bounding box height and width is the size of the template
+    result = cv2.matchTemplate(image, template, method=cv2.TM_CCORR_NORMED)
+    toplefts = np.where(result >= threshold) # only consider "good enough" matches
+    
+    matches = []
+    for [y, x] in zip(*toplefts): 
+         matches.append(tuple([y, x, h, w]))
+    return matches
+    ########## Code ends here ##########
+
 def template_match(template, image,
                    num_upscales=2, num_downscales=3,
                    detection_threshold=0.93):
@@ -20,7 +42,30 @@ def template_match(template, image,
         matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    # No scaling
+    matches = template_match_helper(template, image, threshold=detection_threshold)
+
+    # Upscales
+    upscaled = image
+    scale = 1
+    for i in range(num_upscales):
+        upscaled = cv2.pyrUp(upscaled)
+        scale *= 2
+        upscaled_matches = template_match_helper(template, upscaled, threshold=detection_threshold)
+        for upscaled_match in upscaled_matches:
+            matches.append(tuple(val//scale for val in upscaled_match)) # Divide to downscale bounding box
+
+    # Downscales
+    downscaled = image
+    scale = 1
+    for i in range(num_upscales):
+        downscaled = cv2.pyrDown(upscaled)
+        scale *= 2
+        downscaled_matches = template_match_helper(template, downscaled, threshold=detection_threshold)
+        for downscaled_match in downscaled_matches:
+            matches.append(tuple(val*scale for val in downscaled_match)) # Multiply to upscale bounding box
+
+    return matches
     ########## Code ends here ##########
 
 

@@ -14,7 +14,12 @@ def half_downscale(image):
         downscaled_image: A half-downscaled version of image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    m, n, c = image.shape
+    downscaled = np.zeros((m//2, n//2, c))
+    for y in range(m//2):
+        for x in range(n//2):
+            downscaled[y, x, :] = image[y*2, x*2, :]
+    return downscaled
     ########## Code ends here ##########
 
 
@@ -27,7 +32,8 @@ def blur_half_downscale(image):
         downscaled_image: A half-downscaled version of image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    blur = cv2.GaussianBlur(image, ksize=(5, 5), sigmaX=0.7)
+    return half_downscale(blur)
     ########## Code ends here ##########
 
 
@@ -40,7 +46,7 @@ def two_upscale(image):
         upscaled_image: A 2x-upscaled version of image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    return np.repeat(np.repeat(image, 2, axis=0), 2, axis=1)
     ########## Code ends here ##########
 
 
@@ -60,7 +66,12 @@ def bilinterp_upscale(image, scale):
     filt = f.T * f
 
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    I_scaled = np.zeros((m*scale, n*scale, c))
+    for y in range(m):
+        for x in range(n):
+            I_scaled[y*scale, x*scale, :] = image[y, x, :]
+    upscaled = cv2.filter2D(I_scaled, -1, filt)
+    return upscaled
     ########## Code ends here ##########
 
 
@@ -78,7 +89,31 @@ def main():
     # matches exactly what's in the data array you pass in.
     
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    # Simple downscale
+    simple_downscale = test_card
+    for i in range(3):
+        simple_downscale = half_downscale(simple_downscale)
+    plt.imshow(simple_downscale, interpolation='none')
+    plt.savefig('out_simple_downscale.png')
+
+    # Blurred downscale
+    blur_downscale = test_card
+    for i in range(3):
+        blur_downscale = blur_half_downscale(blur_downscale)
+    plt.imshow(blur_downscale, interpolation='none')
+    plt.savefig('out_blur_downscale.png')
+
+    # Simple upscale
+    simple_upscale = favicon
+    for i in range(3):
+        simple_upscale = two_upscale(simple_upscale)
+    plt.imshow(simple_upscale, interpolation='none')
+    plt.savefig('out_simple_upscale.png')
+
+    # Bilinear interpolation upscale
+    bilin_upscale = bilinterp_upscale(favicon, 8)
+    plt.imshow(bilin_upscale, interpolation='none')
+    plt.savefig('out_bilin_upscale.png')
     ########## Code ends here ##########
 
 
