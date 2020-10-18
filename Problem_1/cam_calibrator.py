@@ -71,7 +71,11 @@ class CameraCalibrator:
         HINT: it does not matter where your frame it, as long as you are consistent!
         '''
         ########## Code starts here ##########
-
+        #print([u.shape for u in u_meas], len([v.shape for v in v_meas]))
+        Xg = [np.array([(i%self.n_corners_x)*self.d_square for i in range(len(u))]) for u in u_meas]
+        Yg = [np.array([(self.n_corners_y-1-(i//self.n_corners_x))*self.d_square for i in range(len(u))]) for u in u_meas]
+        corner_coordinates = (Xg, Yg)
+        #pdb.set_trace()
         ########## Code ends here ##########
         return corner_coordinates
 
@@ -90,7 +94,17 @@ class CameraCalibrator:
         HINT: np.stack and/or np.hstack may come in handy here.
         '''
         ########## Code starts here ##########
-
+        M_tilde = np.stack([X,Y,np.ones_like(X)]) # [3,63]
+        M_zeros = np.zeros_like(M_tilde) # [3,63]
+        row1 = np.concatenate([M_tilde.T, M_zeros.T, -u_meas[:,None]*M_tilde.T], axis=1)#[63,3+3+3]
+        row2 = np.concatenate([M_zeros.T, M_tilde.T, -v_meas[:,None]*M_tilde.T], axis=1)#[63,3+3+3]
+        #pdb.set_trace()
+        L = np.concatenate([row1, row2]) # [63*2,9]
+        u, s, vh = np.linalg.svd(L) # [126,126], [9], [9,9]
+        null_ind = np.argmin(s)
+        H_col = vh[null_ind] #[9]
+        H = np.reshape(H_col, [3,3]) # [3,3]
+        
         ########## Code ends here ##########
         return H
 
@@ -107,7 +121,34 @@ class CameraCalibrator:
         HINT: What is the size of V?
         '''
         ########## Code starts here ##########
-
+        def v(i,j,H):
+            h_i = H[:,i-1]
+            h_j = H[:,j-1]
+            hi1, hi2, hi3 = h_i
+            hj1, hj2, hj3 = h_j
+            v_ij = [hi1*hj1, hi1*hj2+hi2*hj1, hi2*hj2, hi3*hj1+hi1*hj3, hi3*hj2+hi2*hj3, hi3*hj3]
+            return np.array(v_ij)
+            
+        def singleV(H):
+            v12 = v(1,2,H)
+            v11 = v(1,1,H)
+            v22 = v(2,2,H)
+            V = np.stack([v12, v11-v22])
+            return V
+        
+        V = np.concatenate([singleV(HH) for HH in H]) # [2*23,6]
+        #pdb.set_trace()
+        u, s, vh = np.linalg.svd(V)
+        null_ind = np.argmin(s)
+        b_col = vh[null_ind] # [6]
+        B11,B12,B22,B13,B23,B33 = b_col
+        v0 = (B12*B13 - B11*B23)/(B11*B22 - B12**2)
+        lam = B33 - (B13**2 + v0*(B12*B13-B11*B23))/B11
+        alpha = np.sqrt(lam/B11)
+        beta = np.sqrt(lam*B11/(B11*B22-B12**2))
+        gamma = -B12*alpha**2*beta/lam
+        u0 = gamma*v0/beta - B13*alpha**2/lam
+        A = np.array([[alpha,gamma,u0],[0,beta,v0],[0,0,1]]) # [3,3]
         ########## Code ends here ##########
         return A
 
@@ -121,7 +162,15 @@ class CameraCalibrator:
             t: the translation vector
         '''
         ########## Code starts here ##########
-
+        A_inv = np.linalg.inv(A)
+        lam = 1.0/np.linalg.norm(A_inv.dot(H[:,0]))
+        r1 = lam*np.matmul(A_inv,H[:,0])
+        r2 = lam*np.matmul(A_inv,H[:,1])
+        r3 = np.cross(r1, r2)
+        t = lam*A_inv.dot(H[:,2])
+        Q = np.vstack((r1, r2, r3)).T
+        u, s, vh = np.linalg.svd(Q)
+        R = np.matmul(u, vh)
         ########## Code ends here ##########
         return R, t
 
@@ -136,7 +185,11 @@ class CameraCalibrator:
 
         '''
         ########## Code starts here ##########
-
+        M_tilde = np.vstack((X, Y, Z, np.ones_like(X)))
+        Rt = np.column_stack((R, t))
+        m_tilde = np.matmul(Rt,M_tilde)
+        x = m_tilde[0,:]/m_tilde[2,:]
+        y = m_tilde[1,:]/m_tilde[2,:]
         ########## Code ends here ##########
         return x, y
 
@@ -151,7 +204,11 @@ class CameraCalibrator:
             u, v: the coordinates in the ideal pixel image plane
         '''
         ########## Code starts here ##########
-
+        M_tilde = np.vstack((X, Y, Z, np.ones_like(X)))
+        Rt = np.column_stack((R, t))
+        m_tilde = np.matmul(np.matmul(A,Rt),M_tilde)
+        u = m_tilde[0,:]/m_tilde[2,:]
+        v = m_tilde[1,:]/m_tilde[2,:]
         ########## Code ends here ##########
         return u, v
 
