@@ -16,7 +16,27 @@ def corr(F, I):
         G: An (m, n)-shaped ndarray containing the correlation of the filter with the image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    k, ell, c = F.shape
+    m, n, c = I.shape
+
+    # integer division to just get rows/cols to the outside of 
+    num_pad_rows = k // 2 
+    num_pad_cols = ell // 2
+
+    # add zero padding to I matrix on axes 0 and 1 (2 is color so we don't pad)
+    I_pad = np.pad(I, ((num_pad_rows, num_pad_rows), (num_pad_cols, num_pad_cols), (0,0)), mode='constant')
+
+    f = F.flatten() # vector made from all entries in F
+
+    G = np.zeros(I.shape[0:2])
+    for i in range(G.shape[0]):
+        for j in range(G.shape[1]):
+            # the neighborhood around the pixel of interest
+            neighborhood = I_pad[i:i+F.shape[0], j:j+F.shape[1], :]
+            t = neighborhood.flatten()
+            G[i, j] = np.dot(f, t)
+
+    return G
     ########## Code ends here ##########
 
 
@@ -30,7 +50,27 @@ def norm_cross_corr(F, I):
         G: An (m, n)-shaped ndarray containing the normalized cross-correlation of the filter with the image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    k, ell, c = F.shape
+    m, n, c = I.shape
+
+    # integer division to just get rows/cols to the outside of 
+    num_pad_rows = k // 2 
+    num_pad_cols = ell // 2
+
+    # add zero padding to I matrix on axes 0 and 1 (2 is color so we don't pad)
+    I_pad = np.pad(I, ((num_pad_rows, num_pad_rows), (num_pad_cols, num_pad_cols), (0,0)), mode='constant')
+
+    f = F.flatten() # vector made from all entries in F
+
+    G = np.zeros(I.shape[0:2])
+    for i in range(G.shape[0]):
+        for j in range(G.shape[1]):
+            # the neighborhood around the pixel of interest
+            neighborhood = I_pad[i:i+F.shape[0], j:j+F.shape[1], :]
+            t = neighborhood.flatten()
+            G[i, j] = np.dot(f, t) / (np.linalg.norm(f) * np.linalg.norm(t))
+
+    return G
     ########## Code ends here ##########
 
 
