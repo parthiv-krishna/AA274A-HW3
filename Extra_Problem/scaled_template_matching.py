@@ -58,8 +58,8 @@ def template_match(template, image,
     # Downscales
     downscaled = image
     scale = 1
-    for i in range(num_upscales):
-        downscaled = cv2.pyrDown(upscaled)
+    for i in range(num_downscales):
+        downscaled = cv2.pyrDown(downscaled)
         scale *= 2
         downscaled_matches = template_match_helper(template, downscaled, threshold=detection_threshold)
         for downscaled_match in downscaled_matches:
