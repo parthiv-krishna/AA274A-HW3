@@ -71,6 +71,8 @@ def bilinterp_upscale(image, scale):
         for x in range(n):
             I_scaled[y*scale, x*scale, :] = image[y, x, :]
     upscaled = cv2.filter2D(I_scaled, -1, filt)
+    plt.imshow(filt, interpolation='none')
+    plt.savefig("filt_{}.png".format(scale))
     return upscaled
     ########## Code ends here ##########
 
